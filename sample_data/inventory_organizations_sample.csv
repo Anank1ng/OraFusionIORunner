@@ -1,0 +1,4 @@
+OrganizationCode,OrganizationName,ManagementBusinessUnitId,LegalEntityId,ProfitCenterBusinessUnitId,Status,LocationId,InventoryFlag,MasterOrganizationId,ManufacturingPlantFlag,ContractManufacturingFlag,MaintenanceEnabledFlag,ItemGroupingCode,ItemDefinitionOrganizationId,invOrgParameters.ScheduleId,plantParameters.ManufacturingCalendarId,plantParameters.DefaultSupplySubinventory,plantParameters.DefaultCompletionSubinventory,plantParameters.EnableProcessManufacturingFlag,plantParameters.DefaultWorkMethod
+INV_ORG_TEST,Inventory Org Test,204,204,204,Active,1001,True,204,True,False,False,ORA_RCS_IGB_RFRC,204,100000016383001,100000016383001,SUB1,SUB1,True,PROCESS_MANUFACTURING
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,

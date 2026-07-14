@@ -1,0 +1,30 @@
+{
+  "OrganizationCode": "INV_ORG_TEST",
+  "OrganizationName": "Inventory Org Test",
+  "ManagementBusinessUnitId": 204,
+  "LegalEntityId": 204,
+  "ProfitCenterBusinessUnitId": 204,
+  "Status": "Active",
+  "LocationId": 1001,
+  "InventoryFlag": true,
+  "MasterOrganizationId": 204,
+  "ManufacturingPlantFlag": true,
+  "ContractManufacturingFlag": false,
+  "MaintenanceEnabledFlag": false,
+  "ItemGroupingCode": "ORA_RCS_IGB_RFRC",
+  "ItemDefinitionOrganizationId": 204,
+  "invOrgParameters": [
+    {
+      "ScheduleId": 100000016383001
+    }
+  ],
+  "plantParameters": [
+    {
+      "ManufacturingCalendarId": 100000016383001,
+      "DefaultSupplySubinventory": "SUB1",
+      "DefaultCompletionSubinventory": "SUB1",
+      "EnableProcessManufacturingFlag": true,
+      "DefaultWorkMethod": "PROCESS_MANUFACTURING"
+    }
+  ]
+}
