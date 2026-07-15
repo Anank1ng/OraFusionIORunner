@@ -18,7 +18,7 @@ READ_ONLY_POST_COLUMNS = {
     "ManagementBusinessUnitName": "ManagementBusinessUnitId",
     "LegalEntityName": "LegalEntityId",
     "ProfitCenterBusinessUnitName": "ProfitCenterBusinessUnitId",
-    "ItemDefinitionOrganizationName": "ItemDefinitionOrganizationId",
+    "ItemDefinitionOrganizationName": "ItemDefinitionOrganizationId atau ItemDefinitionOrganizationCode",
 }
 
 
@@ -127,6 +127,37 @@ def remove_empty_containers(obj: Any) -> Any:
     return obj
 
 
+def apply_inventory_organization_rules(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply Oracle Inventory Organization item grouping helper rules.
+
+    - ORA_RCS_IGB_DFTN / Definition Organization:
+      the new org is its own item definition org. Because OrganizationId does not
+      exist before POST succeeds, use ItemDefinitionOrganizationCode and default
+      it from OrganizationCode when blank. Do not send ItemDefinitionOrganizationId.
+
+    - ORA_RCS_IGB_RFRC / Reference Organization:
+      the new org references an existing definition org, so user must provide
+      ItemDefinitionOrganizationId or ItemDefinitionOrganizationCode.
+    """
+    item_grouping = payload.get("ItemGroupingCode")
+
+    if item_grouping == "ORA_RCS_IGB_DFTN":
+        payload.pop("ItemDefinitionOrganizationId", None)
+        if is_blank(payload.get("ItemDefinitionOrganizationCode")) and not is_blank(payload.get("OrganizationCode")):
+            payload["ItemDefinitionOrganizationCode"] = payload["OrganizationCode"]
+
+    if item_grouping == "ORA_RCS_IGB_RFRC":
+        has_definition_id = not is_blank(payload.get("ItemDefinitionOrganizationId"))
+        has_definition_code = not is_blank(payload.get("ItemDefinitionOrganizationCode"))
+        if not has_definition_id and not has_definition_code:
+            raise PayloadBuildError(
+                "Untuk ItemGroupingCode ORA_RCS_IGB_RFRC, isi ItemDefinitionOrganizationId "
+                "atau ItemDefinitionOrganizationCode dari definition/reference org yang sudah ada."
+            )
+
+    return payload
+
+
 def get_row_value(row: pd.Series, column: str, default: Any = None) -> Any:
     if column in row and not is_blank(row[column]):
         return row[column]
@@ -179,6 +210,8 @@ def build_payload_from_row(row: pd.Series, mapping: Dict[str, Any], include_null
     if errors:
         raise PayloadBuildError("; ".join(errors))
 
+    payload = remove_empty_containers(payload)
+    payload = apply_inventory_organization_rules(payload)
     return remove_empty_containers(payload)
 
 
