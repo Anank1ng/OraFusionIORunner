@@ -39,7 +39,7 @@ REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
     },
     # Endpoint lokasi bisa berbeda antar module/setup. Kalau gagal, app tetap jalan dan tampilkan errornya.
     "Locations LOV": {
-        "endpoint": "/fscmRestApi/resources/11.13.18.05/locationsLOV",
+        "endpoint": "/hcmRestApi/resources/11.13.18.05/locationsLov",
         "id_candidates": ["LocationId", "LocationID"],
         "name_candidates": ["LocationName", "Name", "LocationCode", "AddressLine1"],
         "optional": True,
