@@ -37,7 +37,13 @@ REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
         "id_candidates": ["OrganizationId", "InventoryOrganizationId"],
         "name_candidates": ["OrganizationName", "OrganizationCode", "Name"],
     },
-    # Endpoint lokasi bisa berbeda antar module/setup. Kalau gagal, app tetap jalan dan tampilkan errornya.
+    "Schedules": {
+        "endpoint": "/fscmRestApi/resources/11.13.18.05/schedules",
+        "id_candidates": ["ScheduleId"],
+        "name_candidates": ["Name", "ScheduleName", "Description"],
+        "description": "Untuk mengisi invOrgParameters.ScheduleId.",
+    },
+    # Endpoint lokasi ada di HCM REST API pada instance yang dipakai user. Kalau gagal, app tetap jalan dan tampilkan errornya.
     "Locations LOV": {
         "endpoint": "/hcmRestApi/resources/11.13.18.05/locationsLov",
         "id_candidates": ["LocationId", "LocationID"],
@@ -184,12 +190,16 @@ def available_fields_from_reference(mapping: Dict[str, Any], reference_row: Dict
         ref_value = reference_row.get(col, "")
         has_reference_value = not is_blank(ref_value)
         rows.append({
-            "include": bool(field.get("required") or has_reference_value),
+            "include": bool(field.get("required") or has_reference_value or field.get("default") is not None),
             "required": bool(field.get("required")),
+            "section": field.get("section", "General"),
+            "label": field.get("label", col),
             "excel_column": col,
             "payload_path": field.get("payload_path"),
             "type": field.get("type"),
+            "default": field.get("default", ""),
             "reference_value": ref_value,
+            "reference_hint": field.get("reference_hint", ""),
             "description": field.get("description", ""),
         })
 
