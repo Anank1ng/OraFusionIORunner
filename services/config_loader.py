@@ -46,7 +46,10 @@ def schema_to_mapping(schema: Dict[str, Any], selected_excel_columns: List[str] 
                 "default": field.get("default", None),
                 "max_length": field.get("max_length"),
                 "allowed_values": field.get("allowed_values"),
+                "label": field.get("label", field.get("excel_column")),
+                "section": field.get("section", "General"),
                 "description": field.get("description", ""),
+                "reference_hint": field.get("reference_hint", ""),
                 "read_only_for_post": bool(field.get("read_only_for_post", False)),
                 "use_instead": field.get("use_instead", ""),
             })
