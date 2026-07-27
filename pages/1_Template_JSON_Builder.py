@@ -28,32 +28,56 @@ with st.expander("Informasi API", expanded=True):
         st.write(f"- {note}")
 
 st.subheader("1. Pilih field yang masuk template")
+st.caption("Field optional boleh dikosongkan di Excel. Payload builder akan skip cell kosong, jadi tidak semua kolom harus diisi.")
 
 field_rows = []
 for f in fields:
     field_rows.append({
         "include": bool(f.get("include_by_default")),
+        "section": f.get("section", "General"),
         "required": bool(f.get("required")),
+        "label": f.get("label", f.get("excel_column")),
         "excel_column": f.get("excel_column"),
         "payload_path": f.get("payload_path"),
         "type": f.get("type"),
         "default": f.get("default", ""),
         "max_length": f.get("max_length", ""),
+        "reference_hint": f.get("reference_hint", ""),
         "description": f.get("description", "")
     })
 
 field_df = pd.DataFrame(field_rows)
-edited_df = st.data_editor(
-    field_df,
+all_sections = sorted(field_df["section"].dropna().unique().tolist())
+selected_sections = st.multiselect(
+    "Filter section",
+    options=all_sections,
+    default=all_sections,
+    help="Filter tampilan field supaya tidak terlalu penuh. Include tetap tersimpan dari tabel yang terlihat."
+)
+visible_df = field_df[field_df["section"].isin(selected_sections)].reset_index(drop=True)
+
+edited_visible_df = st.data_editor(
+    visible_df,
     hide_index=True,
     use_container_width=True,
-    disabled=["required", "excel_column", "payload_path", "type", "max_length", "description"],
+    height=520,
+    disabled=["section", "required", "label", "excel_column", "payload_path", "type", "max_length", "reference_hint", "description"],
     column_config={
         "include": st.column_config.CheckboxColumn("Include", help="Masukkan field ini ke template Excel"),
+        "section": st.column_config.TextColumn("Section", width="medium"),
         "required": st.column_config.CheckboxColumn("Required"),
-        "description": st.column_config.TextColumn("Description", width="large")
+        "label": st.column_config.TextColumn("Label", width="medium"),
+        "description": st.column_config.TextColumn("Description", width="large"),
+        "reference_hint": st.column_config.TextColumn("Reference", width="medium"),
     }
 )
+
+# Merge edited rows back to the full field list.
+edited_df = field_df.copy()
+for _, edited_row in edited_visible_df.iterrows():
+    mask = edited_df["excel_column"] == edited_row["excel_column"]
+    edited_df.loc[mask, "include"] = edited_row["include"]
+    edited_df.loc[mask, "default"] = edited_row["default"]
 
 selected_columns = edited_df.loc[edited_df["include"] == True, "excel_column"].tolist()
 mapping = schema_to_mapping(schema, selected_columns)
