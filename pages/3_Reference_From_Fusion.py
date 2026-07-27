@@ -17,6 +17,7 @@ from services.reference_service import (
     item_preview_dataframe,
     items_to_reference_dataframe,
     mapping_with_reference_defaults,
+    post_safe_mapping,
     reference_template_dataframe,
     reference_workbook_bytes,
 )
@@ -284,6 +285,14 @@ st.write("Default field sekarang memakai ID field. Hindari field Name karena bia
 field_rows = available_fields_from_reference(full_reference_mapping, reference_row)
 field_df = pd.DataFrame(field_rows)
 
+unsafe_count = int((field_df["post_safe"] == False).sum()) if "post_safe" in field_df.columns else 0
+if unsafe_count:
+    st.info(
+        f"{unsafe_count} field display/read-only dari hasil GET otomatis tidak di-include untuk template POST. "
+        "Contoh: LegalEntityName, ProfitCenterBusinessUnitName, ItemDefinitionOrganizationName. "
+        "Gunakan field ID/Code penggantinya."
+    )
+
 all_sections = sorted(field_df["section"].dropna().unique().tolist())
 default_sections = [
     section for section in all_sections
@@ -316,13 +325,15 @@ edited_visible_df = st.data_editor(
     hide_index=True,
     use_container_width=True,
     height=520,
-    disabled=["required", "section", "label", "excel_column", "payload_path", "type", "reference_value", "reference_hint", "description"],
+    disabled=["post_safe", "required", "section", "label", "excel_column", "payload_path", "type", "reference_value", "use_instead", "reference_hint", "description"],
     column_config={
         "include": st.column_config.CheckboxColumn("Include"),
+        "post_safe": st.column_config.CheckboxColumn("POST Safe"),
         "required": st.column_config.CheckboxColumn("Required"),
         "section": st.column_config.TextColumn("Section", width="medium"),
         "label": st.column_config.TextColumn("Label", width="medium"),
         "reference_value": st.column_config.TextColumn("Reference Value", width="large"),
+        "use_instead": st.column_config.TextColumn("Use Instead", width="medium"),
         "reference_hint": st.column_config.TextColumn("Reference", width="medium"),
         "description": st.column_config.TextColumn("Description", width="large"),
     },
@@ -334,8 +345,13 @@ for _, edited_row in edited_visible_df.iterrows():
     mask = edited_df["excel_column"] == edited_row["excel_column"]
     edited_df.loc[mask, "include"] = edited_row["include"]
 
-selected_columns = edited_df.loc[edited_df["include"] == True, "excel_column"].tolist()
-reference_mapping = schema_to_mapping(schema, selected_columns)
+# Safety guard: even if a display/read-only field is accidentally checked,
+# never include it in the generated POST mapping/template.
+if "post_safe" in edited_df.columns:
+    edited_df.loc[edited_df["post_safe"] == False, "include"] = False
+
+selected_columns = edited_df.loc[(edited_df["include"] == True) & (edited_df.get("post_safe", True) == True), "excel_column"].tolist()
+reference_mapping = post_safe_mapping(schema_to_mapping(schema, selected_columns))
 
 opt1, opt2 = st.columns(2)
 with opt1:
