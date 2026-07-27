@@ -1,30 +1,42 @@
 {
   "OrganizationCode": "INV_ORG_TEST",
   "OrganizationName": "Inventory Org Test",
-  "ManagementBusinessUnitId": 204,
-  "LegalEntityId": 204,
-  "ProfitCenterBusinessUnitId": 204,
   "Status": "Active",
   "LocationId": 1001,
   "InventoryFlag": true,
+  "ManagementBusinessUnitId": 204,
+  "LegalEntityId": 204,
+  "ProfitCenterBusinessUnitId": 204,
   "MasterOrganizationId": 204,
-  "ManufacturingPlantFlag": true,
-  "ContractManufacturingFlag": false,
-  "MaintenanceEnabledFlag": false,
-  "ItemGroupingCode": "ORA_RCS_IGB_RFRC",
-  "ItemDefinitionOrganizationId": 204,
+  "ItemGroupingCode": "ORA_RCS_IGB_DFTN",
+  "ItemDefinitionOrganizationCode": "INV_ORG_TEST",
   "invOrgParameters": [
     {
-      "ScheduleId": 100000016383001
+      "StartingRevision": "0",
+      "ScheduleId": 100000016383001,
+      "AllowNegativeOnhandTransactionsFlag": false,
+      "UseOriginalReceiptDateFlag": false,
+      "RoundReorderQuantityFlag": false,
+      "FillKillTransferOrdersFlag": false,
+      "FillKillSalesOrderFlag": false,
+      "UseCurrentItemCostFlag": true,
+      "NegativeInvReceiptFlag": false,
+      "TrackByProjectFlag": false,
+      "TrackByCountryOfOriginFlag": false,
+      "AcceptSubstituteItemsFlag": false,
+      "AutomaticallyDeleteAllocationsFlag": false,
+      "FillKillMoveOrderFlag": false,
+      "PreFillPickedQuantityFlag": false,
+      "PickConfirmationRequiredFlag": false,
+      "CapturePickingExceptionsFlag": true,
+      "OverpickTransferOrdersFlag": false,
+      "OverpickForSpecialHandlingFlag": false,
+      "PurchasingByRevisionFlag": false,
+      "DistributedOrganizationFlag": false
     }
   ],
-  "plantParameters": [
-    {
-      "ManufacturingCalendarId": 100000016383001,
-      "DefaultSupplySubinventory": "SUB1",
-      "DefaultCompletionSubinventory": "SUB1",
-      "EnableProcessManufacturingFlag": true,
-      "DefaultWorkMethod": "PROCESS_MANUFACTURING"
-    }
-  ]
+  "ManufacturingPlantFlag": false,
+  "MaintenanceEnabledFlag": false,
+  "MaintenanceTechnicianWorkbenchEnabledFlag": false,
+  "ContractManufacturingFlag": false
 }
