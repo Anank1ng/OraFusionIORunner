@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Tuple
 import pandas as pd
 
 from services.oracle_client import OracleFusionClient, OracleResponse
-from services.payload_builder import is_blank, split_payload_path
+from services.payload_builder import READ_ONLY_POST_COLUMNS, is_blank, split_payload_path
 
 UNIQUE_EXCEL_COLUMNS = {"OrganizationCode", "OrganizationName"}
 SYSTEM_RESPONSE_KEYS = {
@@ -19,6 +19,26 @@ SYSTEM_RESPONSE_KEYS = {
     "LastUpdateDate",
     "LastUpdateLogin",
 }
+
+READ_ONLY_REFERENCE_COLUMNS = set(READ_ONLY_POST_COLUMNS.keys())
+
+
+def is_read_only_post_field(field: Dict[str, Any]) -> bool:
+    """Return True when a schema/mapping field is unsafe to send in POST payload."""
+    excel_col = field.get("excel_column", "")
+    return bool(field.get("read_only_for_post")) or excel_col in READ_ONLY_REFERENCE_COLUMNS
+
+
+def post_safe_fields(mapping: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return only fields that are safe for POST upload templates."""
+    return [field for field in mapping.get("fields", []) if not is_read_only_post_field(field)]
+
+
+def post_safe_mapping(mapping: Dict[str, Any]) -> Dict[str, Any]:
+    """Copy mapping and remove fields that are read-only/display-only for POST."""
+    safe_mapping = json.loads(json.dumps(mapping, ensure_ascii=False))
+    safe_mapping["fields"] = post_safe_fields(safe_mapping)
+    return safe_mapping
 
 # Endpoint disimpan terpusat supaya mudah diganti kalau instance Oracle punya LOV berbeda.
 REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
@@ -112,6 +132,8 @@ def mapping_with_reference_defaults(
     """Copy mapping and optionally set default values from selected reference data."""
     new_mapping = json.loads(json.dumps(mapping, ensure_ascii=False))
 
+    new_mapping["fields"] = post_safe_fields(new_mapping)
+
     for field in new_mapping.get("fields", []):
         excel_col = field.get("excel_column")
         if not excel_col:
@@ -142,7 +164,7 @@ def reference_template_dataframe(
     """Create an Excel template dataframe where the first row is filled from selected reference."""
     data: Dict[str, List[Any]] = {}
 
-    for field in mapping.get("fields", []):
+    for field in post_safe_fields(mapping):
         col = field.get("excel_column")
         if not col:
             continue
@@ -182,15 +204,25 @@ def item_preview_dataframe(items: List[Dict[str, Any]]) -> pd.DataFrame:
 
 
 def available_fields_from_reference(mapping: Dict[str, Any], reference_row: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Rows for UI editor: field list + value pulled from selected Oracle reference."""
+    """Rows for UI editor: field list + value pulled from selected Oracle reference.
+
+    Oracle GET responses contain many display/name attributes that are useful as
+    reference only, but cannot be sent in POST create payloads. Those fields stay
+    visible in the selector as guidance, but are automatically unchecked and
+    marked as POST unsafe.
+    """
     rows: List[Dict[str, Any]] = []
 
     for field in mapping.get("fields", []):
         col = field.get("excel_column")
         ref_value = reference_row.get(col, "")
         has_reference_value = not is_blank(ref_value)
+        read_only_for_post = is_read_only_post_field(field)
+        use_instead = field.get("use_instead") or READ_ONLY_POST_COLUMNS.get(col, "")
+
         rows.append({
-            "include": bool(field.get("required") or has_reference_value or field.get("default") is not None),
+            "include": False if read_only_for_post else bool(field.get("required") or has_reference_value or field.get("default") is not None),
+            "post_safe": not read_only_for_post,
             "required": bool(field.get("required")),
             "section": field.get("section", "General"),
             "label": field.get("label", col),
@@ -199,6 +231,7 @@ def available_fields_from_reference(mapping: Dict[str, Any], reference_row: Dict
             "type": field.get("type"),
             "default": field.get("default", ""),
             "reference_value": ref_value,
+            "use_instead": use_instead,
             "reference_hint": field.get("reference_hint", ""),
             "description": field.get("description", ""),
         })
