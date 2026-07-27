@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import streamlit as st
 
-from services.config_loader import load_schema, schema_to_mapping
+from services.config_loader import all_request_fields, load_schema, schema_to_mapping
 from services.excel_service import make_json_bytes, make_template_excel_bytes
 from services.oracle_client import OracleFusionClient
 from services.payload_builder import PayloadBuildError, build_payload_from_row
@@ -28,6 +28,10 @@ st.caption("Ambil ID referensi dari instance Oracle, lalu buat template upload y
 
 schema = load_schema("inventory_organizations.json")
 default_mapping = schema_to_mapping(schema)
+full_reference_mapping = schema_to_mapping(
+    schema,
+    [field["excel_column"] for field in all_request_fields(schema)]
+)
 
 try:
     default_base_url = st.secrets.get("ORACLE_BASE_URL", "")
@@ -61,7 +65,7 @@ if connection_disabled:
 # 1. LOV / master reference fetcher
 # -----------------------------------------------------------------------------
 st.subheader("1. Ambil daftar ID dari Oracle")
-st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, LegalEntityId, OrganizationId, dan LocationId.")
+st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, LegalEntityId, OrganizationId, ScheduleId, dan LocationId.")
 
 with st.expander("Endpoint reference yang akan diambil", expanded=True):
     selected_reference_names: List[str] = []
@@ -170,7 +174,7 @@ st.divider()
 # 2. Existing Inventory Organization reference template
 # -----------------------------------------------------------------------------
 st.subheader("2. Ambil existing Inventory Organization sebagai contoh template")
-st.write("Bagian ini mengambil contoh org yang sudah ada, lalu mengubahnya menjadi template upload berbasis field ID.")
+st.write("Bagian ini mengambil contoh org yang sudah ada, termasuk child invOrgParameters/plantParameters kalau expand aktif, lalu mengubahnya menjadi template upload berbasis field ID dan optional settings.")
 
 st.sidebar.header("Existing Org GET Options")
 limit = st.sidebar.number_input("Existing org limit", min_value=1, max_value=500, value=25, step=5)
@@ -269,28 +273,66 @@ selected_item = items[int(selected_index)]
 with st.expander("Raw JSON reference terpilih", expanded=False):
     st.json(selected_item)
 
-reference_row = flatten_item_to_excel_row(selected_item, default_mapping)
+reference_row = flatten_item_to_excel_row(selected_item, full_reference_mapping)
 reference_df = pd.DataFrame([reference_row])
-st.write("Nilai reference yang cocok dengan mapping default")
+st.write("Nilai reference yang cocok dengan seluruh field schema/template")
 st.dataframe(reference_df, use_container_width=True)
 
 st.subheader("4. Pilih field dan generate template")
 st.write("Default field sekarang memakai ID field. Hindari field Name karena biasanya read-only untuk POST.")
 
-field_rows = available_fields_from_reference(default_mapping, reference_row)
+field_rows = available_fields_from_reference(full_reference_mapping, reference_row)
 field_df = pd.DataFrame(field_rows)
-edited_df = st.data_editor(
-    field_df,
+
+all_sections = sorted(field_df["section"].dropna().unique().tolist())
+default_sections = [
+    section for section in all_sections
+    if section in [
+        "Core Organization",
+        "Financial IDs",
+        "Item Definition Settings",
+        "Additional Usages",
+        "Inventory Settings",
+        "Movement Request",
+        "Picking Defaults",
+        "Lot Control",
+        "Serial Number",
+        "Item Sourcing Details",
+        "Distribution Parameters",
+        "Kanban",
+        "Packing Unit",
+    ]
+]
+selected_sections = st.multiselect(
+    "Filter section",
+    options=all_sections,
+    default=default_sections or all_sections,
+    help="Pakai filter ini supaya field reference yang tampil tidak terlalu panjang."
+)
+visible_df = field_df[field_df["section"].isin(selected_sections)].reset_index(drop=True)
+
+edited_visible_df = st.data_editor(
+    visible_df,
     hide_index=True,
     use_container_width=True,
-    disabled=["required", "excel_column", "payload_path", "type", "reference_value", "description"],
+    height=520,
+    disabled=["required", "section", "label", "excel_column", "payload_path", "type", "reference_value", "reference_hint", "description"],
     column_config={
         "include": st.column_config.CheckboxColumn("Include"),
         "required": st.column_config.CheckboxColumn("Required"),
+        "section": st.column_config.TextColumn("Section", width="medium"),
+        "label": st.column_config.TextColumn("Label", width="medium"),
         "reference_value": st.column_config.TextColumn("Reference Value", width="large"),
+        "reference_hint": st.column_config.TextColumn("Reference", width="medium"),
         "description": st.column_config.TextColumn("Description", width="large"),
     },
 )
+
+# Merge edited visible rows back to full list, preserving previously included fields from hidden sections.
+edited_df = field_df.copy()
+for _, edited_row in edited_visible_df.iterrows():
+    mask = edited_df["excel_column"] == edited_row["excel_column"]
+    edited_df.loc[mask, "include"] = edited_row["include"]
 
 selected_columns = edited_df.loc[edited_df["include"] == True, "excel_column"].tolist()
 reference_mapping = schema_to_mapping(schema, selected_columns)
