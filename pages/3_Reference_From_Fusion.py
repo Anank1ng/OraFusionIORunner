@@ -106,6 +106,7 @@ def _bundle_zip_bytes(
 
 
 st.title("🔎 Reference Finder")
+st.caption("Version: v12 reference fix — Profit Center Business Units & Picking Rules LOV included")
 st.caption("Ambil ID referensi dari Oracle, pilih existing IO sebagai contoh, lalu generate template upload yang POST-safe.")
 
 schema = load_schema("inventory_organizations.json")
