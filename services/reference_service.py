@@ -11,6 +11,8 @@ from services.oracle_client import OracleFusionClient, OracleResponse
 from services.payload_builder import READ_ONLY_POST_COLUMNS, is_blank, split_payload_path
 
 UNIQUE_EXCEL_COLUMNS = {"OrganizationCode", "OrganizationName"}
+NEW_ORG_CODE_PLACEHOLDER = "NEW_ORG_CODE"
+NEW_ORG_NAME_PLACEHOLDER = "New Inventory Organization Name"
 SYSTEM_RESPONSE_KEYS = {
     "links",
     "CreatedBy",
@@ -139,7 +141,13 @@ def mapping_with_reference_defaults(
         if not excel_col:
             continue
 
-        if blank_unique_fields and excel_col in UNIQUE_EXCEL_COLUMNS:
+        reference_is_definition_org = reference_row.get("ItemGroupingCode") == "ORA_RCS_IGB_DFTN"
+        should_blank_reference_default = (
+            excel_col in UNIQUE_EXCEL_COLUMNS
+            or (excel_col == "ItemDefinitionOrganizationCode" and reference_is_definition_org)
+        )
+
+        if blank_unique_fields and should_blank_reference_default:
             field.pop("default", None)
             continue
 
@@ -175,10 +183,15 @@ def reference_template_dataframe(
         return df
 
     for col in df.columns:
+        reference_is_definition_org = reference_row.get("ItemGroupingCode") == "ORA_RCS_IGB_DFTN"
         if blank_unique_fields and col == "OrganizationCode":
-            df.loc[0, col] = "NEW_ORG_CODE"
+            df.loc[0, col] = NEW_ORG_CODE_PLACEHOLDER
         elif blank_unique_fields and col == "OrganizationName":
-            df.loc[0, col] = "New Inventory Organization Name"
+            df.loc[0, col] = NEW_ORG_NAME_PLACEHOLDER
+        elif blank_unique_fields and col == "ItemDefinitionOrganizationCode" and reference_is_definition_org:
+            # For Definition Organization, the item definition org is the new org itself.
+            # Keep it aligned with the new OrganizationCode placeholder.
+            df.loc[0, col] = NEW_ORG_CODE_PLACEHOLDER
         else:
             df.loc[0, col] = reference_row.get(col, "")
 
