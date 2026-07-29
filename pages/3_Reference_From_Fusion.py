@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import streamlit as st
 
-from services.config_loader import all_request_fields, load_schema, schema_to_mapping
+from services.config_loader import FULL_ADVANCED_SECTIONS, MINIMAL_CREATE_IO_COLUMNS, STANDARD_WAREHOUSE_SECTIONS, all_request_fields, load_schema, schema_to_mapping
 from services.excel_service import make_json_bytes, make_template_excel_bytes
 from services.oracle_client import OracleFusionClient
 from services.payload_builder import PayloadBuildError, build_payload_from_row
@@ -26,33 +26,8 @@ from services.reference_service import (
 
 st.set_page_config(page_title="Reference Finder", page_icon="🔎", layout="wide")
 
-MINIMAL_SECTIONS = ["Core Organization", "Financial IDs", "Item Definition Settings"]
-STANDARD_SECTIONS = [
-    "Core Organization",
-    "Financial IDs",
-    "Item Definition Settings",
-    "Additional Usages",
-    "Inventory Settings",
-    "Movement Request",
-    "Picking Defaults",
-]
-ADVANCED_SECTIONS = [
-    "Core Organization",
-    "Financial IDs",
-    "Item Definition Settings",
-    "Additional Usages",
-    "Inventory Settings",
-    "Movement Request",
-    "Picking Defaults",
-    "Lot Control",
-    "Child Lot Control",
-    "Serial Number",
-    "Item Sourcing Details",
-    "Distribution Parameters",
-    "Kanban",
-    "Packing Unit",
-    "Plant Parameters",
-]
+STANDARD_SECTIONS = STANDARD_WAREHOUSE_SECTIONS
+ADVANCED_SECTIONS = FULL_ADVANCED_SECTIONS
 
 
 def _make_client(base_url: str, username: str, password: str, timeout: int) -> OracleFusionClient:
@@ -73,7 +48,7 @@ def _apply_reference_preset(field_df: pd.DataFrame, preset: str) -> pd.DataFrame
     if df.empty:
         return df
     if preset == "Minimal Create IO":
-        df["include"] = df["post_safe"] & df["section"].isin(MINIMAL_SECTIONS)
+        df["include"] = df["post_safe"] & df["excel_column"].isin(MINIMAL_CREATE_IO_COLUMNS)
     elif preset == "Standard Warehouse IO":
         df["include"] = df["post_safe"] & df["section"].isin(STANDARD_SECTIONS)
     elif preset == "Copy selected IO settings":
@@ -160,7 +135,7 @@ if connection_disabled:
 # 1. LOV / master reference fetcher
 # -----------------------------------------------------------------------------
 st.subheader("1. Ambil Reference Data / LOV")
-st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, LegalEntityId, OrganizationId, ScheduleId, dan LocationId.")
+st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, ProfitCenterBusinessUnitId, LegalEntityId, OrganizationId, ScheduleId, PickingRuleId, dan LocationId.")
 
 reference_tables = st.session_state.get("lov_reference_tables", {})
 reference_errors = st.session_state.get("lov_reference_errors", pd.DataFrame())
@@ -177,6 +152,10 @@ with st.container(border=True):
             if checked:
                 selected_reference_names.append(name)
             st.caption(config["endpoint"])
+            if config.get("fixed_q_filter"):
+                st.caption(f"fixed q: {config['fixed_q_filter']}")
+            if config.get("description"):
+                st.caption(config["description"])
             st.caption(_endpoint_status(name, reference_tables, reference_errors))
 
 lov_col1, lov_col2 = st.columns([1, 2])
@@ -201,7 +180,13 @@ if st.button("📥 Fetch Selected Reference", disabled=connection_disabled or no
         for idx, name in enumerate(selected_reference_names):
             config = REFERENCE_ENDPOINTS[name]
             try:
-                response = fetch_reference_collection(client, endpoint=config["endpoint"], limit=int(lov_limit), q_filter=lov_q_filter)
+                response = fetch_reference_collection(
+                    client,
+                    endpoint=config["endpoint"],
+                    limit=int(lov_limit),
+                    q_filter=lov_q_filter,
+                    fixed_q_filter=config.get("fixed_q_filter", ""),
+                )
                 raw_responses[name] = {"ok": response.ok, "status_code": response.status_code, "url": response.url, "body": response.body}
                 if not response.ok:
                     errors.append({
@@ -508,6 +493,8 @@ field_df.loc[field_df["post_safe"] == False, "include"] = False
 st.session_state["reference_field_df"] = field_df.copy()
 
 selected_columns = field_df.loc[(field_df["include"] == True) & (field_df["post_safe"] == True), "excel_column"].tolist()
+if preset == "Minimal Create IO":
+    selected_columns = [col for col in MINIMAL_CREATE_IO_COLUMNS if col in selected_columns]
 reference_mapping = post_safe_mapping(schema_to_mapping(schema, selected_columns))
 
 opt1, opt2 = st.columns(2)
