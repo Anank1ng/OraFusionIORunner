@@ -48,6 +48,15 @@ REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
         "endpoint": "/fscmRestApi/resources/11.13.18.05/finBusinessUnitsLOV",
         "id_candidates": ["BusinessUnitId", "BUId"],
         "name_candidates": ["Name", "BusinessUnitName", "BusinessUnit"],
+        "description": "Untuk ManagementBusinessUnitId dan BU umum.",
+    },
+    "Profit Center Business Units": {
+        "endpoint": "/fscmRestApi/resources/11.13.18.05/finBusinessUnitsLOV",
+        "id_candidates": ["BusinessUnitId", "BUId"],
+        "name_candidates": ["Name", "BusinessUnitName", "BusinessUnit"],
+        "fixed_q_filter": "ProfitCenterFlag=true",
+        "description": "Untuk mengisi ProfitCenterBusinessUnitId. Sumber sama dengan Business Units, difilter ProfitCenterFlag=true.",
+        "optional": True,
     },
     "Legal Entities": {
         "endpoint": "/fscmRestApi/resources/11.13.18.05/legalEntitiesLOV",
@@ -64,6 +73,13 @@ REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
         "id_candidates": ["ScheduleId"],
         "name_candidates": ["Name", "ScheduleName", "Description"],
         "description": "Untuk mengisi invOrgParameters.ScheduleId.",
+    },
+    "Picking Rules LOV": {
+        "endpoint": "/fscmRestApi/resources/11.13.18.05/shippingPickSlipGroupingRulesLOV",
+        "id_candidates": ["PickSlipGroupingRuleId", "PickingRuleId", "DefaultPickingRuleId", "RuleId"],
+        "name_candidates": ["Name", "RuleName", "PickSlipGroupingRuleName", "PickingRuleName", "Description"],
+        "description": "Untuk referensi invOrgParameters.DefaultPickingRuleId / Picking Rule di tab Item Sourcing Details.",
+        "optional": True,
     },
     # Endpoint lokasi ada di HCM REST API pada instance yang dipakai user. Kalau gagal, app tetap jalan dan tampilkan errornya.
     "Locations LOV": {
@@ -279,15 +295,26 @@ def items_to_reference_dataframe(reference_type: str, items: List[Dict[str, Any]
     return pd.DataFrame(rows)
 
 
+def _combine_q_filters(global_q_filter: str = "", fixed_q_filter: str = "") -> str:
+    """Combine optional UI q filter with endpoint-specific q filter."""
+    global_q = (global_q_filter or "").strip()
+    fixed_q = (fixed_q_filter or "").strip()
+    if global_q and fixed_q:
+        return f"({fixed_q}) and ({global_q})"
+    return fixed_q or global_q
+
+
 def fetch_reference_collection(
     client: OracleFusionClient,
     endpoint: str,
     limit: int = 100,
     q_filter: str = "",
+    fixed_q_filter: str = "",
 ) -> OracleResponse:
     params: Dict[str, Any] = {"limit": int(limit), "totalResults": "true"}
-    if q_filter.strip():
-        params["q"] = q_filter.strip()
+    combined_q = _combine_q_filters(q_filter, fixed_q_filter)
+    if combined_q:
+        params["q"] = combined_q
     return client.get_collection_items(endpoint, params=params)
 
 
