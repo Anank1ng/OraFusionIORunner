@@ -7,6 +7,51 @@ from typing import Any, Dict, List
 ROOT_DIR = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT_DIR / "schemas"
 
+# Minimal fields confirmed from Oracle Fusion UI required (*) fields for creating an Inventory Organization.
+# Keep this order so generated Excel templates are easier to read and test.
+MINIMAL_CREATE_IO_COLUMNS = [
+    "OrganizationCode",
+    "OrganizationName",
+    "ManagementBusinessUnitId",
+    "LegalEntityId",
+    "ProfitCenterBusinessUnitId",
+    "Status",
+    "LocationId",
+    "InventoryFlag",
+    "MasterOrganizationId",
+    "ItemGroupingCode",
+    "ItemDefinitionOrganizationCode",
+    "invOrgParameters.ScheduleId",
+]
+
+STANDARD_WAREHOUSE_SECTIONS = [
+    "Core Organization",
+    "Financial IDs",
+    "Item Definition Settings",
+    "Additional Usages",
+    "Inventory Settings",
+    "Movement Request",
+    "Picking Defaults",
+]
+
+FULL_ADVANCED_SECTIONS = [
+    "Core Organization",
+    "Financial IDs",
+    "Item Definition Settings",
+    "Additional Usages",
+    "Inventory Settings",
+    "Movement Request",
+    "Picking Defaults",
+    "Lot Control",
+    "Child Lot Control",
+    "Serial Number",
+    "Item Sourcing Details",
+    "Distribution Parameters",
+    "Kanban",
+    "Packing Unit",
+    "Plant Parameters",
+]
+
 
 def list_schema_files() -> List[Path]:
     return sorted(SCHEMA_DIR.glob("*.json"))
@@ -21,10 +66,14 @@ def load_schema(schema_name: str = "inventory_organizations.json") -> Dict[str, 
 
 
 def default_fields(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
-    return [
-        field for field in schema.get("fields", [])
+    fields_by_column = {
+        field.get("excel_column"): field
+        for field in schema.get("fields", [])
         if field.get("include_by_default") and not field.get("system_generated")
-    ]
+    }
+    ordered = [fields_by_column[col] for col in MINIMAL_CREATE_IO_COLUMNS if col in fields_by_column]
+    ordered += [field for field in fields_by_column.values() if field not in ordered]
+    return ordered
 
 
 def all_request_fields(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -32,9 +81,26 @@ def all_request_fields(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def schema_to_mapping(schema: Dict[str, Any], selected_excel_columns: List[str] | None = None) -> Dict[str, Any]:
-    selected = set(selected_excel_columns or [f["excel_column"] for f in default_fields(schema)])
+    selected_list = selected_excel_columns or [f["excel_column"] for f in default_fields(schema)]
+    selected = set(selected_list)
+    field_by_column = {
+        field.get("excel_column"): field
+        for field in schema.get("fields", [])
+        if not field.get("system_generated") and field.get("excel_column")
+    }
+
+    # Preserve selected_excel_columns order for generated templates.
+    # This keeps presets such as Minimal Create IO predictable.
+    ordered_schema_fields = [field_by_column[col] for col in selected_list if col in field_by_column]
+    ordered_schema_fields += [
+        field for field in schema.get("fields", [])
+        if not field.get("system_generated")
+        and field.get("excel_column") in selected
+        and field not in ordered_schema_fields
+    ]
+
     fields = []
-    for field in schema.get("fields", []):
+    for field in ordered_schema_fields:
         if field.get("system_generated"):
             continue
         if field.get("excel_column") in selected:

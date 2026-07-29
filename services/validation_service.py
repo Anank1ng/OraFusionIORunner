@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from services.payload_builder import PayloadBuildError, READ_ONLY_POST_COLUMNS, build_payload_from_row, is_blank
+from services.payload_builder import PayloadBuildError, READ_ONLY_POST_COLUMNS, build_payload_from_row, get_field_default, get_row_value, is_blank, resolve_dynamic_row_value
 
 
 def expected_columns(mapping: Dict[str, Any]) -> List[str]:
@@ -40,7 +40,12 @@ def validate_required_values(df: pd.DataFrame, mapping: Dict[str, Any]) -> pd.Da
             col = field["excel_column"]
             has_default = field.get("default") is not None
 
-            if col not in df.columns or (is_blank(row.get(col)) and not has_default):
+            raw_value = row.get(col) if col in df.columns else None
+            if is_blank(raw_value):
+                raw_value = field.get("default")
+            raw_value = resolve_dynamic_row_value(row, mapping, col, raw_value)
+
+            if col not in df.columns or (is_blank(raw_value) and not has_default):
                 rows.append({
                     "excel_row": int(index) + 2,
                     "column": col,

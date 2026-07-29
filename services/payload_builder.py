@@ -164,6 +164,32 @@ def get_row_value(row: pd.Series, column: str, default: Any = None) -> Any:
     return default
 
 
+def get_field_default(mapping: Dict[str, Any], excel_column: str, fallback: Any = None) -> Any:
+    for field in mapping.get("fields", []):
+        if field.get("excel_column") == excel_column:
+            return field.get("default", fallback)
+    return fallback
+
+
+def resolve_dynamic_row_value(row: pd.Series, mapping: Dict[str, Any], excel_column: str, raw_value: Any) -> Any:
+    """Resolve values that can be derived from other minimal Create IO fields.
+
+    For Definition Organization (ORA_RCS_IGB_DFTN), Oracle UI shows the Item
+    Definition Organization as the new organization itself. The new
+    OrganizationId is not known before POST, so we use OrganizationCode.
+    """
+    if excel_column != "ItemDefinitionOrganizationCode" or not is_blank(raw_value):
+        return raw_value
+
+    item_grouping = get_row_value(row, "ItemGroupingCode", get_field_default(mapping, "ItemGroupingCode", "ORA_RCS_IGB_DFTN"))
+    organization_code = get_row_value(row, "OrganizationCode", get_field_default(mapping, "OrganizationCode"))
+
+    if item_grouping == "ORA_RCS_IGB_DFTN" and not is_blank(organization_code):
+        return organization_code
+
+    return raw_value
+
+
 def build_payload_from_row(row: pd.Series, mapping: Dict[str, Any], include_nulls: bool = False) -> Dict[str, Any]:
     payload: Dict[str, Any] = {}
     errors: List[str] = []
@@ -175,6 +201,7 @@ def build_payload_from_row(row: pd.Series, mapping: Dict[str, Any], include_null
         default = field.get("default", None)
 
         raw_value = get_row_value(row, excel_column, default)
+        raw_value = resolve_dynamic_row_value(row, mapping, excel_column, raw_value)
 
         read_only_for_post = bool(field.get("read_only_for_post")) or excel_column in READ_ONLY_POST_COLUMNS
         if read_only_for_post and not is_blank(raw_value):
