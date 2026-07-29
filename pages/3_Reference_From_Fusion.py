@@ -106,7 +106,7 @@ def _bundle_zip_bytes(
 
 
 st.title("🔎 Reference Finder")
-st.caption("Version: v12 reference fix — Profit Center Business Units & Picking Rules LOV included")
+st.caption("Version: v13 reference fix — Picking Rules LOV removed")
 st.caption("Ambil ID referensi dari Oracle, pilih existing IO sebagai contoh, lalu generate template upload yang POST-safe.")
 
 schema = load_schema("inventory_organizations.json")
@@ -136,7 +136,7 @@ if connection_disabled:
 # 1. LOV / master reference fetcher
 # -----------------------------------------------------------------------------
 st.subheader("1. Ambil Reference Data / LOV")
-st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, ProfitCenterBusinessUnitId, LegalEntityId, OrganizationId, ScheduleId, PickingRuleId, dan LocationId.")
+st.write("Pakai ini untuk mencari ID seperti BusinessUnitId, ProfitCenterBusinessUnitId, LegalEntityId, OrganizationId, ScheduleId, dan LocationId.")
 
 reference_tables = st.session_state.get("lov_reference_tables", {})
 reference_errors = st.session_state.get("lov_reference_errors", pd.DataFrame())
