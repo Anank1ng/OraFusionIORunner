@@ -13,7 +13,8 @@
     "Use Reference Finder to download Business Unit, Legal Entity, Inventory Organization, and Location IDs from the target instance before filling the upload template.",
     "For ItemGroupingCode ORA_RCS_IGB_DFTN, this runner auto-fills ItemDefinitionOrganizationCode from OrganizationCode when blank and will not send ItemDefinitionOrganizationId. For ORA_RCS_IGB_RFRC, fill ItemDefinitionOrganizationId or ItemDefinitionOrganizationCode from an existing definition/reference org.",
     "Advanced inventory parameter fields are optional. Empty Excel cells are skipped from the JSON payload, so only filled optional fields are sent to Oracle.",
-    "Use Mock/Dry Run mode first before posting to DEV/TEST/PROD."
+    "Use Mock/Dry Run mode first before posting to DEV/TEST/PROD.",
+    "Minimal Create IO columns: OrganizationCode, OrganizationName, ManagementBusinessUnitId, LegalEntityId, ProfitCenterBusinessUnitId, Status, LocationId, InventoryFlag, MasterOrganizationId, ItemGroupingCode, ItemDefinitionOrganizationCode, and invOrgParameters.ScheduleId."
   ],
   "response_id_field": "OrganizationId",
   "display_key_field": "OrganizationCode",
@@ -26,8 +27,9 @@
       "type": "string",
       "required": true,
       "include_by_default": true,
-      "description": "Short code that uniquely identifies the organization.",
-      "max_length": 18
+      "description": "Short code unik untuk inventory organization. Minimal Create IO wajib diisi.",
+      "max_length": 18,
+      "minimal_create_io": true
     },
     {
       "payload_path": "OrganizationName",
@@ -37,8 +39,9 @@
       "type": "string",
       "required": true,
       "include_by_default": true,
-      "description": "Name of the organization.",
-      "max_length": 240
+      "description": "Nama inventory organization. Minimal Create IO wajib diisi.",
+      "max_length": 240,
+      "minimal_create_io": true
     },
     {
       "payload_path": "Status",
@@ -46,11 +49,12 @@
       "label": "Status",
       "section": "Core Organization",
       "type": "string",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "Status, commonly Active.",
+      "description": "Status organization. Minimal Create IO wajib diisi. Umumnya Active.",
       "max_length": 30,
-      "default": "Active"
+      "default": "Active",
+      "minimal_create_io": true
     },
     {
       "payload_path": "LocationId",
@@ -58,10 +62,11 @@
       "label": "Location ID",
       "section": "Core Organization",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "ID lokasi inventory organization.",
-      "reference_hint": "Reference Finder: Locations LOV"
+      "description": "ID lokasi inventory organization. Minimal Create IO wajib diisi. Ambil dari Reference Finder: Locations LOV atau existing IO reference.",
+      "reference_hint": "Reference Finder: Locations LOV / existing IO",
+      "minimal_create_io": true
     },
     {
       "payload_path": "InventoryFlag",
@@ -71,8 +76,9 @@
       "type": "boolean",
       "required": true,
       "include_by_default": true,
-      "description": "true = inventory organization. This attribute must be supplied when creating an organization.",
-      "default": true
+      "description": "Minimal Create IO wajib diisi. true = inventory organization.",
+      "default": true,
+      "minimal_create_io": true
     },
     {
       "payload_path": "ManagementBusinessUnitName",
@@ -92,10 +98,11 @@
       "label": "Management Business Unit ID",
       "section": "Financial IDs",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "ID Business Unit untuk management BU.",
-      "reference_hint": "Reference Finder: Business Units"
+      "description": "ID Management Business Unit. Minimal Create IO wajib diisi. Ambil dari Reference Finder: Business Units.",
+      "reference_hint": "Reference Finder: Business Units",
+      "minimal_create_io": true
     },
     {
       "payload_path": "LegalEntityName",
@@ -115,10 +122,11 @@
       "label": "Legal Entity ID",
       "section": "Financial IDs",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "ID Legal Entity.",
-      "reference_hint": "Reference Finder: Legal Entities"
+      "description": "ID Legal Entity. Minimal Create IO wajib diisi. Ambil dari Reference Finder: Legal Entities.",
+      "reference_hint": "Reference Finder: Legal Entities",
+      "minimal_create_io": true
     },
     {
       "payload_path": "ProfitCenterBusinessUnitName",
@@ -138,10 +146,11 @@
       "label": "Profit Center Business Unit ID",
       "section": "Financial IDs",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "ID Business Unit untuk profit center BU. Biasanya bisa sama dengan ManagementBusinessUnitId.",
-      "reference_hint": "Reference Finder: Business Units"
+      "description": "ID Profit Center Business Unit. Minimal Create IO wajib diisi. Pada beberapa setup nilainya bisa sama dengan ManagementBusinessUnitId, tetapi tetap cek reference/setting instance.",
+      "reference_hint": "Reference Finder: Business Units",
+      "minimal_create_io": true
     },
     {
       "payload_path": "MasterOrganizationId",
@@ -149,10 +158,11 @@
       "label": "Item Master Organization ID",
       "section": "Item Definition Settings",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "ID parent/master inventory organization.",
-      "reference_hint": "Reference Finder: Inventory Organizations LOV"
+      "description": "ID Item Master / Master Inventory Organization. Minimal Create IO wajib diisi. Ambil dari Reference Finder: Inventory Organizations LOV.",
+      "reference_hint": "Reference Finder: Inventory Organizations LOV",
+      "minimal_create_io": true
     },
     {
       "payload_path": "MasterOrganizationCode",
@@ -171,15 +181,16 @@
       "label": "Item Grouping Behavior",
       "section": "Item Definition Settings",
       "type": "string",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "Use ORA_RCS_IGB_DFTN for Definition Organization or ORA_RCS_IGB_RFRC for Reference Organization.",
+      "description": "Minimal Create IO wajib diisi. Gunakan ORA_RCS_IGB_DFTN untuk Definition Organization atau ORA_RCS_IGB_RFRC untuk Reference Organization.",
       "max_length": 20,
       "default": "ORA_RCS_IGB_DFTN",
       "allowed_values": [
         "ORA_RCS_IGB_DFTN",
         "ORA_RCS_IGB_RFRC"
-      ]
+      ],
+      "minimal_create_io": true
     },
     {
       "payload_path": "ItemDefinitionOrganizationCode",
@@ -187,10 +198,12 @@
       "label": "Item Definition Organization Code",
       "section": "Item Definition Settings",
       "type": "string",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "Untuk Definition Organization, isi sama dengan OrganizationCode. App auto-fill kalau kosong.",
-      "max_length": 18
+      "description": "Minimal Create IO wajib diisi untuk mode Definition Organization. Isi sama dengan OrganizationCode. Jika kosong dan ItemGroupingCode = ORA_RCS_IGB_DFTN, app akan otomatis mengisi dari OrganizationCode saat membangun payload.",
+      "max_length": 18,
+      "minimal_create_io": true,
+      "reference_hint": "Untuk ORA_RCS_IGB_DFTN: isi sama dengan OrganizationCode"
     },
     {
       "payload_path": "ItemDefinitionOrganizationName",
@@ -222,7 +235,7 @@
       "section": "Item Definition Settings",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Starting revision to use for new items by default.",
       "max_length": 18
     },
@@ -233,7 +246,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true if the organization is a manufacturing plant."
     },
     {
@@ -243,7 +256,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true if the organization performs maintenance activities."
     },
     {
@@ -253,7 +266,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "If true, organization appears in maintenance technician workbench org picker when allowed by security."
     },
     {
@@ -263,7 +276,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true if organization is a contract manufacturing plant."
     },
     {
@@ -273,7 +286,7 @@
       "section": "Additional Usages",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Integrated system type/code. Example value depends on Oracle setup.",
       "max_length": 30
     },
@@ -284,7 +297,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true to integrate manufacturing/maintenance with WMS."
     },
     {
@@ -294,7 +307,7 @@
       "section": "Additional Usages",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true if organization is a destination inventory organization associated with a customer."
     },
     {
@@ -304,7 +317,7 @@
       "section": "Additional Usages",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Customer ID when InternalCustomerFlag is true."
     },
     {
@@ -314,7 +327,7 @@
       "section": "Additional Usages",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Account number associated with the internal customer.",
       "max_length": 30
     },
@@ -325,7 +338,7 @@
       "section": "Additional Usages",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Supplier ID for contract manufacturing organization.",
       "reference_hint": "Requires supplier reference/LOV if ContractManufacturingFlag=true"
     },
@@ -336,7 +349,7 @@
       "section": "Additional Usages",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Supplier site ID for contract manufacturing organization.",
       "reference_hint": "Requires supplier site reference/LOV if ContractManufacturingFlag=true"
     },
@@ -346,10 +359,11 @@
       "label": "Schedule ID",
       "section": "Inventory Settings",
       "type": "integer",
-      "required": false,
+      "required": true,
       "include_by_default": true,
-      "description": "Workday calendar/schedule ID for inventory organization parameters.",
-      "reference_hint": "Use existing IO / schedule reference"
+      "description": "Schedule ID. Minimal Create IO wajib diisi. Ambil dari Reference Finder: Schedules atau dari existing IO reference.",
+      "reference_hint": "Reference Finder: Schedules / existing IO",
+      "minimal_create_io": true
     },
     {
       "payload_path": "invOrgParameters[0].ScheduleName",
@@ -368,7 +382,7 @@
       "section": "Inventory Settings",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Time zone that the organization uses.",
       "max_length": 50
     },
@@ -379,7 +393,7 @@
       "section": "Inventory Settings",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default locator control code/value for subinventories.",
       "max_length": 30
     },
@@ -390,7 +404,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = allow transactions that result in negative on-hand quantity."
     },
     {
@@ -400,7 +414,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = use original receipt date for on-hand quantity during transaction."
     },
     {
@@ -410,7 +424,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = round up reorder quantity."
     },
     {
@@ -420,7 +434,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = cancel remaining quantities on transfer order lines during pick release/confirm/ship confirm."
     },
     {
@@ -430,7 +444,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = cancel remaining quantities on sales order backorder lines."
     },
     {
@@ -440,7 +454,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = default to current item cost in Create Miscellaneous Transaction."
     },
     {
@@ -450,7 +464,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = organization allows negative balances in inventory."
     },
     {
@@ -460,7 +474,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = enable project tracking for materials/manufacturing transactions."
     },
     {
@@ -470,7 +484,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = enable country of origin tracking."
     },
     {
@@ -480,7 +494,7 @@
       "section": "Inventory Settings",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = warehouse accepts substitute items."
     },
     {
@@ -490,7 +504,7 @@
       "section": "Movement Request",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Number of movement request lines processed together when allocating material."
     },
     {
@@ -500,7 +514,7 @@
       "section": "Movement Request",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Threshold used when grouping replenishment movement request lines."
     },
     {
@@ -510,7 +524,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = cancel/delete picks if movement request is canceled."
     },
     {
@@ -520,7 +534,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = allow partially picked replenishment movement request line to be canceled/closed."
     },
     {
@@ -530,7 +544,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = populate picked quantity during pick confirmation."
     },
     {
@@ -540,7 +554,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = manual pick confirmation required."
     },
     {
@@ -550,7 +564,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = capture picking exceptions/deviation."
     },
     {
@@ -560,7 +574,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = allow overpicking movement requests."
     },
     {
@@ -570,7 +584,7 @@
       "section": "Movement Request",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = supports overpicking/staging for special handling."
     },
     {
@@ -580,7 +594,7 @@
       "section": "Picking Defaults",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default picking rule ID used when selecting material."
     },
     {
@@ -590,7 +604,7 @@
       "section": "Picking Defaults",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default picking order assigned to each subinventory."
     },
     {
@@ -600,7 +614,7 @@
       "section": "Picking Defaults",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default picking order assigned to each locator."
     },
     {
@@ -610,7 +624,7 @@
       "section": "Picking Defaults",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default reason ID for picking quantity exceptions."
     },
     {
@@ -620,7 +634,7 @@
       "section": "Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Control level to ensure lot number uniqueness.",
       "max_length": 30
     },
@@ -631,7 +645,7 @@
       "section": "Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Control level used when creating lot numbers.",
       "max_length": 30
     },
@@ -642,7 +656,7 @@
       "section": "Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Prefix added when creating lot number.",
       "max_length": 80
     },
@@ -653,7 +667,7 @@
       "section": "Lot Control",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Total length of lot number."
     },
     {
@@ -663,7 +677,7 @@
       "section": "Lot Control",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = pad lot number suffix with zeros."
     },
     {
@@ -673,7 +687,7 @@
       "section": "Lot Control",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Determines whether lot status can change when transferring lot-controlled material."
     },
     {
@@ -683,7 +697,7 @@
       "section": "Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default subinventory for expired lot quarantine operations.",
       "max_length": 10
     },
@@ -694,7 +708,7 @@
       "section": "Lot Control",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Default locator ID for expired lot quarantine operations."
     },
     {
@@ -704,7 +718,7 @@
       "section": "Lot Control",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Determines whether to create/convert lot UOM conversion."
     },
     {
@@ -714,7 +728,7 @@
       "section": "Child Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Control level used when creating child lot number.",
       "max_length": 1
     },
@@ -725,7 +739,7 @@
       "section": "Child Lot Control",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Prefix added to child lot number.",
       "max_length": 80
     },
@@ -736,7 +750,7 @@
       "section": "Child Lot Control",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Total length of child lot number."
     },
     {
@@ -746,7 +760,7 @@
       "section": "Child Lot Control",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = pad child lot number with zeros."
     },
     {
@@ -756,7 +770,7 @@
       "section": "Child Lot Control",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = child lot inherits attributes from parent lot."
     },
     {
@@ -766,7 +780,7 @@
       "section": "Child Lot Control",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = validate child lot number format."
     },
     {
@@ -776,7 +790,7 @@
       "section": "Serial Number",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Control level to ensure serial number uniqueness.",
       "max_length": 30
     },
@@ -787,7 +801,7 @@
       "section": "Serial Number",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Control level used when creating serial numbers.",
       "max_length": 30
     },
@@ -798,7 +812,7 @@
       "section": "Serial Number",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Prefix added when creating serial number.",
       "max_length": 80
     },
@@ -809,7 +823,7 @@
       "section": "Serial Number",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Smallest serial number used when creating serial numbers.",
       "max_length": 80
     },
@@ -820,7 +834,7 @@
       "section": "Serial Number",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = application selects each serial number."
     },
     {
@@ -830,7 +844,7 @@
       "section": "Item Sourcing Details",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Source type used when replenishing an item.",
       "max_length": 30
     },
@@ -841,7 +855,7 @@
       "section": "Item Sourcing Details",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Replenishment organization ID if SourceType is Organization.",
       "reference_hint": "Reference Finder: Inventory Organizations LOV"
     },
@@ -852,7 +866,7 @@
       "section": "Item Sourcing Details",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Replenishment organization code if SourceType is Organization."
     },
     {
@@ -872,7 +886,7 @@
       "section": "Item Sourcing Details",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Replenishment subinventory if SourceType is Organization.",
       "max_length": 10
     },
@@ -883,7 +897,7 @@
       "section": "Item Sourcing Details",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = PO/requisition must include revision when restocking."
     },
     {
@@ -893,7 +907,7 @@
       "section": "Distribution Parameters",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = organization provides logistics services such as warehousing/shipping."
     },
     {
@@ -903,7 +917,7 @@
       "section": "Kanban",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Prefix for Kanban card/document sequence.",
       "max_length": 20
     },
@@ -914,7 +928,7 @@
       "section": "Kanban",
       "type": "integer",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Starting number for Kanban card sequence; setting value can enable Kanban."
     },
     {
@@ -924,7 +938,7 @@
       "section": "Packing Unit",
       "type": "boolean",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "true = enable GS1-128 packing unit/barcode handling."
     },
     {
@@ -934,7 +948,7 @@
       "section": "Packing Unit",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Prefix for packing unit string.",
       "max_length": 10
     },
@@ -945,7 +959,7 @@
       "section": "Packing Unit",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Smallest packing unit number to use."
     },
     {
@@ -955,7 +969,7 @@
       "section": "Packing Unit",
       "type": "string",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Suffix for packing unit string.",
       "max_length": 10
     },
@@ -966,7 +980,7 @@
       "section": "Packing Unit",
       "type": "float",
       "required": false,
-      "include_by_default": true,
+      "include_by_default": false,
       "description": "Total length of packing unit string."
     },
     {
