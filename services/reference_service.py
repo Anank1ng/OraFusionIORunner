@@ -74,13 +74,6 @@ REFERENCE_ENDPOINTS: Dict[str, Dict[str, Any]] = {
         "name_candidates": ["Name", "ScheduleName", "Description"],
         "description": "Untuk mengisi invOrgParameters.ScheduleId.",
     },
-    "Picking Rules LOV": {
-        "endpoint": "/fscmRestApi/resources/11.13.18.05/shippingPickSlipGroupingRulesLOV",
-        "id_candidates": ["PickSlipGroupingRuleId", "PickingRuleId", "DefaultPickingRuleId", "RuleId"],
-        "name_candidates": ["Name", "RuleName", "PickSlipGroupingRuleName", "PickingRuleName", "Description"],
-        "description": "Untuk referensi invOrgParameters.DefaultPickingRuleId / Picking Rule di tab Item Sourcing Details.",
-        "optional": True,
-    },
     # Endpoint lokasi ada di HCM REST API pada instance yang dipakai user. Kalau gagal, app tetap jalan dan tampilkan errornya.
     "Locations LOV": {
         "endpoint": "/hcmRestApi/resources/11.13.18.05/locationsLov",
