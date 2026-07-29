@@ -106,7 +106,7 @@ def _bundle_zip_bytes(
 
 
 st.title("🔎 Reference Finder")
-st.caption("Version: v13 reference fix — Picking Rules LOV removed")
+st.caption("Version: v12.1 field selection fix — manual checkbox ikut preview/download")
 st.caption("Ambil ID referensi dari Oracle, pilih existing IO sebagai contoh, lalu generate template upload yang POST-safe.")
 
 schema = load_schema("inventory_organizations.json")
@@ -493,9 +493,12 @@ with left_select:
 field_df.loc[field_df["post_safe"] == False, "include"] = False
 st.session_state["reference_field_df"] = field_df.copy()
 
-selected_columns = field_df.loc[(field_df["include"] == True) & (field_df["post_safe"] == True), "excel_column"].tolist()
-if preset == "Minimal Create IO":
-    selected_columns = [col for col in MINIMAL_CREATE_IO_COLUMNS if col in selected_columns]
+selected_columns_raw = field_df.loc[(field_df["include"] == True) & (field_df["post_safe"] == True), "excel_column"].tolist()
+# Jangan paksa kembali ke 12 field Minimal setelah user centang manual.
+# Minimal hanya dipakai sebagai default awal; setelah itu checkbox user menjadi source utama.
+# Tetap rapikan urutan: field minimal dulu, lalu field tambahan sesuai urutan schema.
+selected_columns = [col for col in MINIMAL_CREATE_IO_COLUMNS if col in selected_columns_raw]
+selected_columns += [col for col in selected_columns_raw if col not in selected_columns]
 reference_mapping = post_safe_mapping(schema_to_mapping(schema, selected_columns))
 
 opt1, opt2 = st.columns(2)

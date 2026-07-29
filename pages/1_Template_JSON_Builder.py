@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import streamlit as st
 
-from services.config_loader import all_request_fields, load_schema, schema_to_mapping
+from services.config_loader import FULL_ADVANCED_SECTIONS, MINIMAL_CREATE_IO_COLUMNS, STANDARD_WAREHOUSE_SECTIONS, all_request_fields, load_schema, schema_to_mapping
 from services.excel_service import (
     dictionary_dataframe,
     fields_to_template_dataframe,
@@ -20,38 +20,10 @@ from services.reference_service import is_read_only_post_field, post_safe_mappin
 st.set_page_config(page_title="Template & JSON Builder", page_icon="🧱", layout="wide")
 
 PRESET_SECTIONS: Dict[str, List[str]] = {
-    "Minimal Create IO": [
-        "Core Organization",
-        "Financial IDs",
-        "Item Definition Settings",
-    ],
-    "Standard Warehouse IO": [
-        "Core Organization",
-        "Financial IDs",
-        "Item Definition Settings",
-        "Additional Usages",
-        "Inventory Settings",
-        "Movement Request",
-        "Picking Defaults",
-    ],
-    "Full Advanced IO": [
-        "Core Organization",
-        "Financial IDs",
-        "Item Definition Settings",
-        "Additional Usages",
-        "Inventory Settings",
-        "Movement Request",
-        "Picking Defaults",
-        "Lot Control",
-        "Child Lot Control",
-        "Serial Number",
-        "Item Sourcing Details",
-        "Distribution Parameters",
-        "Kanban",
-        "Packing Unit",
-        "Plant Parameters",
-    ],
+    "Standard Warehouse IO": STANDARD_WAREHOUSE_SECTIONS,
+    "Full Advanced IO": FULL_ADVANCED_SECTIONS,
 }
+
 
 
 def _sanitize_filename(name: str) -> str:
@@ -85,7 +57,9 @@ def _field_rows(schema_fields: List[Dict[str, Any]], preset_name: str, post_safe
         post_safe = not is_read_only_post_field(field)
         section = field.get("section", "General")
         include = bool(field.get("include_by_default"))
-        if preset_sections is not None:
+        if preset_name == "Minimal Create IO":
+            include = field.get("excel_column") in MINIMAL_CREATE_IO_COLUMNS and post_safe
+        elif preset_sections is not None:
             include = section in preset_sections and post_safe
         if preset_name == "Full Advanced IO":
             include = post_safe
@@ -121,6 +95,7 @@ def _section_badge(field_df: pd.DataFrame, section: str) -> str:
 
 
 st.title("🧱 Template & JSON Builder")
+st.caption("Version: v12.1 field selection fix — manual checkbox ikut preview/download")
 st.caption("Buat template Excel, mapping JSON, dan sample payload dengan UI bertahap supaya field advanced tidak bikin bingung.")
 
 schema = load_schema("inventory_organizations.json")
@@ -145,7 +120,7 @@ preset = st.radio(
 )
 
 mode_help = {
-    "Minimal Create IO": "Field inti untuk create IO: core, financial ID, dan item definition settings.",
+    "Minimal Create IO": "Field minimal yang kamu konfirmasi dari tanda bintang UI Oracle: core, financial ID, item definition, dan ScheduleId.",
     "Standard Warehouse IO": "Field yang paling sering dipakai untuk warehouse/inventory org, termasuk inventory settings dan picking/movement request.",
     "Full Advanced IO": "Semua field POST-safe dari schema, termasuk lot, serial, kanban, packing, dan plant parameters.",
     "Custom": "Mulai dari default schema lalu pilih manual per section.",
@@ -248,7 +223,12 @@ for section in visible_sections:
 working_df.loc[working_df["post_safe"] == False, "include"] = False
 st.session_state["builder_field_df"] = working_df.copy()
 
-selected_columns = working_df.loc[working_df["include"] == True, "excel_column"].tolist()
+selected_columns_raw = working_df.loc[working_df["include"] == True, "excel_column"].tolist()
+# Jangan paksa kembali ke 12 field Minimal setelah user centang manual.
+# Minimal hanya dipakai sebagai default awal; setelah itu checkbox user menjadi source utama.
+# Tetap rapikan urutan: field minimal dulu, lalu field tambahan sesuai urutan schema.
+selected_columns = [col for col in MINIMAL_CREATE_IO_COLUMNS if col in selected_columns_raw]
+selected_columns += [col for col in selected_columns_raw if col not in selected_columns]
 mapping = post_safe_mapping(schema_to_mapping(schema, selected_columns))
 
 # Apply editable defaults.
